@@ -1,0 +1,6 @@
+fastapi
+uvicorn
+sse-starlette
+openai
+python-multipart
+pydantic==1.10.12
