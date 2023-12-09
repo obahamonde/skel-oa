@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..types.typedefs import RunResource
+from ..components.schemas import RunResource
 
 app = APIRouter(prefix="/runs", tags=["runs"])
 

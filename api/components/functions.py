@@ -1,17 +1,22 @@
 from abc import ABC, abstractmethod
-from typing import Any, TypeVar
+from typing import Any, Generic, TypeVar
 
 from openai.types.chat.completion_create_params import Function
 from pydantic import BaseModel  # pylint: disable=E0611
 
-from .decorators import handle, setup_logging
+from .decorators import robust, setup_logging
 
 T = TypeVar("T", bound=BaseModel)
 
 logger = setup_logging()
 
 
-class OpenAIFunction(BaseModel, ABC):
+class OpenAIFunctionCall(BaseModel, Generic[T]):
+    function: str
+    data: T
+
+
+class OpenAIFunction(BaseModel, Generic[T], ABC):
     @classmethod
     def definition(cls) -> Function:
         assert cls.__doc__ is not None, "OpenAIFunction must have a docstring"
@@ -27,16 +32,21 @@ class OpenAIFunction(BaseModel, ABC):
         }
         return Function(name=_name, description=_description, parameters=_parameters)  # type: ignore
 
+    @property
+    def name(self) -> str:
+        return self.__class__.__name__.lower()
+
     @abstractmethod
-    async def run(self) -> Any:
+    async def run(self) -> T:
         raise NotImplementedError
+
+    @robust
+    async def __call__(self) -> OpenAIFunctionCall[T]:
+        logger.info("Calling %s", self.__class__.__name__.lower())
+        response = await self.run()
+        return OpenAIFunctionCall(function=self.name, data=response)
 
     @property
     @abstractmethod
     def tool_(self) -> Any:
         raise NotImplementedError
-
-    @handle
-    async def __call__(self):
-        logger.info("Calling %s", self.__class__.__name__.lower())
-        return await self.run()

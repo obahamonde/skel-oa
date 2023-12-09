@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..types.typedefs import ThreadMessageResource
+from ..components.schemas import ThreadMessageResource
 
 app = APIRouter(prefix="/messages", tags=["messages"])
 

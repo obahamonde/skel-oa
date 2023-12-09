@@ -12,6 +12,15 @@ export default defineConfig({
       '~/': `${path.resolve(__dirname, 'src')}/`,
     },
   },
+  server: {
+    proxy: {
+      '/api': {
+        target: 'http://localhost:8000/api',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api/, ''),
+      },
+    },
+  },
   plugins: [
     // https://github.com/antfu/unocss
     // see unocss.config.ts for config
@@ -24,12 +33,17 @@ export default defineConfig({
 
     // https://github.com/antfu/unplugin-auto-import
     AutoImport({
+      include: [
+        /\.[tj]sx?$/,
+        /\.md$/,
+      ],
       imports: [
         'react',
         'react-router-dom',
         { 'usehooks-ts': ['useCounter', 'useDarkMode'] },
       ],
-      dts: true,
+      dts: './auto-imports.d.ts',
+
     }),
   ],
 

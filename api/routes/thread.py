@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..types.typedefs import ThreadResource
+from ..components.schemas import ThreadResource
 
 app = APIRouter(prefix="/threads", tags=["threads"])
 

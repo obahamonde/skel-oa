@@ -10,6 +10,7 @@ from typing import (
     TypeVar,
     Union,
     cast,
+    AsyncIterator
 )
 
 from fastapi import HTTPException
@@ -239,7 +240,7 @@ class APIClient(BaseModel, LazyProxy[AsyncClient]):
         params: Optional[Dict[str, Scalar]] = None,
         json: Optional[Json] = None,
         headers: Optional[Dict[str, str]] = None,
-    ):
+    ) -> AsyncIterator[bytes]:
         if headers is not None:
             self.headers.update(headers)
             headers = self.headers

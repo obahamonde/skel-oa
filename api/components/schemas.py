@@ -1,6 +1,8 @@
 from __future__ import annotations
 
+import os
 from abc import ABC, abstractmethod
+from base64 import b64encode
 from typing import Any, Generic, Literal, Optional, TypeVar
 
 from openai import AsyncOpenAI
@@ -16,6 +18,8 @@ from openai.types.beta.threads import ThreadMessage
 from openai.types.beta.threads.run import Run
 from openai.types.file_object import FileObject
 from pydantic import BaseConfig, BaseModel, Field
+
+from .decorators import robust
 
 T = TypeVar("T", bound=BaseModel)
 
@@ -36,6 +40,7 @@ class BaseResource(BaseModel, ABC, Generic[T]):
         orm_mode = True
 
     @abstractmethod
+    @robust
     async def post(self) -> T:
         ...
 
@@ -53,10 +58,12 @@ class FileResource(BaseResource[FileObject]):
         return await self.api().files.create(**self.dict())
 
     @classmethod
+    @robust
     async def get(cls, *, file_id: str) -> FileObject:
         return await cls.api().files.retrieve(file_id=file_id)
 
     @classmethod
+    @robust
     async def delete(cls, *, file_id: str):
         await cls.api().files.delete(file_id=file_id)
 
@@ -71,18 +78,20 @@ class AssistantResource(BaseResource[Assistant]):
 
     async def post(self) -> Assistant:
         if self.tools is None:
-            self.tools = basic_tools
+            self.tools = basic_tools  # type: ignore
         else:
-            self.tools = basic_tools + self.tools
+            self.tools = basic_tools + self.tools  # type: ignore
         return await self.api().beta.assistants.create(
             **self.dict(),
         )
 
     @classmethod
+    @robust
     async def get(cls, *, assistant_id: str) -> Assistant:
         return await cls.api().beta.assistants.retrieve(assistant_id=assistant_id)
 
     @classmethod
+    @robust
     async def delete(cls, *, assistant_id: str):
         await cls.api().beta.assistants.delete(assistant_id=assistant_id)
 
@@ -99,10 +108,12 @@ class ThreadResource(BaseResource[Thread]):
         return await self.api().beta.threads.create(**self.dict())
 
     @classmethod
+    @robust
     async def get(cls, *, thread_id: str) -> Thread:
         return await cls.api().beta.threads.retrieve(thread_id=thread_id)
 
     @classmethod
+    @robust
     async def delete(cls, *, thread_id: str):
         await cls.api().beta.threads.delete(thread_id=thread_id)
 
@@ -117,12 +128,14 @@ class ThreadMessageResource(BaseResource[ThreadMessage]):
         return await self.api().beta.threads.messages.create(**self.dict())
 
     @classmethod
+    @robust
     async def get(cls, *, message_id: str, thread_id: str) -> ThreadMessage:
         return await cls.api().beta.threads.messages.retrieve(
             message_id=message_id, thread_id=thread_id
         )
 
     @classmethod
+    @robust
     async def list(cls, *, thread_id: str):
         return await cls.api().beta.threads.messages.list(thread_id=thread_id)
 
@@ -136,27 +149,60 @@ class RunResource(BaseResource[Run]):
 
     async def post(self) -> Run:
         if self.tools is None:
-            self.tools = basic_tools
+            self.tools = basic_tools  # type: ignore
         else:
-            self.tools = basic_tools + self.tools
+            self.tools = basic_tools + self.tools  # type: ignore
         return await self.api().beta.threads.runs.create(
             **self.dict(),
         )
 
     @classmethod
+    @robust
     async def get(cls, *, run_id: str, thread_id: str) -> Run:
         return await cls.api().beta.threads.runs.retrieve(
             run_id=run_id, thread_id=thread_id
         )
 
     @classmethod
+    @robust
     async def delete(cls, *, run_id: str, thread_id: str):
         return await cls.api().beta.threads.runs.cancel(
             run_id=run_id, thread_id=thread_id
         )
 
     @classmethod
+    @robust
     async def list(cls, *, thread_id: str, run_id: str):
         return await cls.api().beta.threads.runs.steps.list(
             thread_id=thread_id, run_id=run_id
         )
+
+
+class Node(BaseModel):
+    path: str
+    name: str
+    type: str
+    content: list[Node] | str
+
+    @classmethod
+    def tree(cls, path: str = ".") -> Node:
+        name = os.path.basename(path)
+        if os.path.isdir(path):
+            return cls(
+                path=path,
+                name=name,
+                type="directory",
+                content=[cls.tree(os.path.join(path, x)) for x in os.listdir(path)],
+            )
+        else:
+            with open(path, "rb") as f:
+                try:
+                    content = f.read().decode()
+                except UnicodeDecodeError:
+                    content = b64encode(f.read()).decode()
+            return cls(
+                path=path,
+                name=name,
+                type="file",
+                content=content,
+            )

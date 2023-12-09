@@ -8,7 +8,7 @@ export default function Button({ children, onClick }: ButtonProps) {
     <button
       className="btn btn-primary"
       onClick={onClick}
-    >
+    >   
       {children}
     </button>
   );

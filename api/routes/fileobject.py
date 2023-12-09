@@ -1,6 +1,6 @@
 from fastapi import APIRouter, File, UploadFile
 
-from ..types.typedefs import FileResource
+from ..components.schemas import FileResource
 
 app = APIRouter(prefix="/files", tags=["files"])
 

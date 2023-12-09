@@ -18,7 +18,14 @@ html.dark {
 box-sizing: border-box;
 }
 
-
+.icon {
+  cursor: pointer;
+  vertical-align: middle;
+  @apply w-5 h-5;
+  &:hover {
+    @apply scale-125;
+  }
+}
 
 
 
@@ -169,4 +176,13 @@ width:100%;
 position:static;
 display:block;
 }
+}
+
+.bg-input{
+    background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, #111111 18.23%, #111111 100%)
+}
+
+body{
+    background-color: #111111;
+    color: white;
 }

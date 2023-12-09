@@ -261,20 +261,7 @@ def retry(
     return decorator
 
 
-def async_io(func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
-    """
-    Decorator to convert an IO bound function to a coroutine by running it in a thread pool.
-    """
-
-    @handle
-    @functools.wraps(func)
-    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
-        return await asyncio.to_thread(func, *args, **kwargs)
-
-    return wrapper
-
-
-def handle(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
+def robust(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
     """
     A decorator to apply all decorators to a coroutine.
 
@@ -287,3 +274,16 @@ def handle(func: Callable[P, Awaitable[T]]) -> Callable[P, Awaitable[T]]:
         [retry(), handle_errors, process_time],
         func,
     )
+
+
+def async_io(func: Callable[P, T]) -> Callable[P, Awaitable[T]]:
+    """
+    Decorator to convert an IO bound function to a coroutine by running it in a thread pool.
+    """
+
+    @functools.wraps(func)
+    @robust
+    async def wrapper(*args: P.args, **kwargs: P.kwargs) -> T:
+        return await asyncio.to_thread(func, *args, **kwargs)
+
+    return wrapper

@@ -1,6 +1,6 @@
 from fastapi import APIRouter
 
-from ..types.typedefs import AssistantResource
+from ..components.schemas import AssistantResource
 
 app = APIRouter(prefix="/assistants", tags=["assistants"])
 
